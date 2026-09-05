@@ -1,3 +1,7 @@
+# Git
+.git
+.gitignore
+
 # Python
 __pycache__/
 *.py[cod]
@@ -14,13 +18,13 @@ eggs/
 venv/
 env/
 .venv/
+
+# Environment files
 .env
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
 
 # Testing
 .pytest_cache/
@@ -28,14 +32,18 @@ env/
 htmlcov/
 .tox/
 
-# Project specific
-results.csv
-output.csv
-*.log
+# CI
+.github/
 
-# OS
-.DS_Store
-Thumbs.db
+# Docs
+*.md
+LICENSE
 
 # Docker
-.docker/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+*.log
+.DS_Store

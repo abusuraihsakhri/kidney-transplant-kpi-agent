@@ -3,17 +3,16 @@ Enrichment Feature Implementation for kidney-transplant-kpi-agent.
 Generated based on domain-specific requirements in specifications.
 """
 from dataclasses import dataclass, field
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, List, Optional
 import datetime
-import math
-import json
 
 # =============================================================================
-# 1. FEATURES
+# Base Data Class & Engine
 # =============================================================================
 @dataclass
-class FeaturesEngineResult:
-    feature_name: str = "Features"
+class EnrichmentResult:
+    """Standardized result from any enrichment engine evaluation."""
+    feature_name: str = "Enrichment"
     status: str = "OPTIMAL"
     score: float = 0.0
     metrics: Dict[str, Any] = field(default_factory=dict)
@@ -21,16 +20,17 @@ class FeaturesEngineResult:
     recommendations: List[str] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
-class FeaturesEngine:
-    """
-    Features: Features
-    """
-    def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
+
+class BaseEnrichmentEngine:
+    """Base class for all enrichment feature engines with threshold-based evaluation."""
+
+    def __init__(self, feature_name: str, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
+        self.feature_name = feature_name
         self.threshold = threshold
         self.config = config or {}
-        self.history: List[FeaturesEngineResult] = []
+        self.history: List[EnrichmentResult] = []
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> FeaturesEngineResult:
+    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> EnrichmentResult:
         alerts = []
         recs = []
         status = "OPTIMAL"
@@ -38,381 +38,101 @@ class FeaturesEngine:
 
         if primary_value > self.threshold * 2:
             status = "CRITICAL_ALERT"
-            alerts.append(f"Features: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
+            alerts.append(
+                f"{self.feature_name}: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})"
+            )
             recs.append("Initiate immediate protocol review and escalate to attending lead.")
         elif primary_value > self.threshold:
             status = "WARNING"
-            alerts.append(f"Features: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
+            alerts.append(
+                f"{self.feature_name}: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})"
+            )
             recs.append("Increase monitoring frequency and perform secondary verification.")
         else:
             recs.append("Parameters nominal under standard operating bounds.")
 
-        res = FeaturesEngineResult(
-            feature_name="Features",
+        res = EnrichmentResult(
+            feature_name=self.feature_name,
             status=status,
             score=score,
             metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
             alerts=alerts,
-            recommendations=recs
+            recommendations=recs,
         )
         self.history.append(res)
         return res
 
-# =============================================================================
-# 2. WAITLIST MANAGEMENT DASHBOARD
-# =============================================================================
-@dataclass
-class WaitlistManagementDashboardEngineResult:
-    feature_name: str = "Waitlist Management Dashboard"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
-class WaitlistManagementDashboardEngine:
-    """
-    Waitlist Management Dashboard: Waitlist Management Dashboard
-    """
+# =============================================================================
+# Specialized Engine Instances
+# =============================================================================
+class FeaturesEngine(BaseEnrichmentEngine):
+    """Features: General feature evaluation engine."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[WaitlistManagementDashboardEngineResult] = []
+        super().__init__("Features", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> WaitlistManagementDashboardEngineResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Waitlist Management Dashboard: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Waitlist Management Dashboard: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = WaitlistManagementDashboardEngineResult(
-            feature_name="Waitlist Management Dashboard",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 3. IMMUNOSUPPRESSION OPTIMIZATION
-# =============================================================================
-@dataclass
-class ImmunosuppressionOptimizationEngineResult:
-    feature_name: str = "Immunosuppression Optimization"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class ImmunosuppressionOptimizationEngine:
-    """
-    Immunosuppression Optimization: Immunosuppression Optimization
-    """
+class WaitlistManagementDashboardEngine(BaseEnrichmentEngine):
+    """Waitlist Management Dashboard: Waitlist tracking and prioritization."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[ImmunosuppressionOptimizationEngineResult] = []
+        super().__init__("Waitlist Management Dashboard", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> ImmunosuppressionOptimizationEngineResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Immunosuppression Optimization: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Immunosuppression Optimization: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = ImmunosuppressionOptimizationEngineResult(
-            feature_name="Immunosuppression Optimization",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 4. GRAFT FUNCTION MONITOR
-# =============================================================================
-@dataclass
-class GraftFunctionMonitorEngineResult:
-    feature_name: str = "Graft Function Monitor"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class GraftFunctionMonitorEngine:
-    """
-    Graft Function Monitor: Graft Function Monitor
-    """
+class ImmunosuppressionOptimizationEngine(BaseEnrichmentEngine):
+    """Immunosuppression Optimization: Drug protocol evaluation."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[GraftFunctionMonitorEngineResult] = []
+        super().__init__("Immunosuppression Optimization", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> GraftFunctionMonitorEngineResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Graft Function Monitor: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Graft Function Monitor: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = GraftFunctionMonitorEngineResult(
-            feature_name="Graft Function Monitor",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 5. INFECTION PROPHYLAXIS TRACKER
-# =============================================================================
-@dataclass
-class InfectionProphylaxisTrackerResult:
-    feature_name: str = "Infection Prophylaxis Tracker"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class InfectionProphylaxisTracker:
-    """
-    Infection Prophylaxis Tracker: Infection Prophylaxis Tracker
-    """
+class GraftFunctionMonitorEngine(BaseEnrichmentEngine):
+    """Graft Function Monitor: Post-transplant graft surveillance."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[InfectionProphylaxisTrackerResult] = []
+        super().__init__("Graft Function Monitor", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> InfectionProphylaxisTrackerResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Infection Prophylaxis Tracker: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Infection Prophylaxis Tracker: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = InfectionProphylaxisTrackerResult(
-            feature_name="Infection Prophylaxis Tracker",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 6. TRANSPLANT OUTCOMES REGISTRY
-# =============================================================================
-@dataclass
-class TransplantOutcomesRegistryEngineResult:
-    feature_name: str = "Transplant Outcomes Registry"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class TransplantOutcomesRegistryEngine:
-    """
-    Transplant Outcomes Registry: Transplant Outcomes Registry
-    """
+class InfectionProphylaxisTracker(BaseEnrichmentEngine):
+    """Infection Prophylaxis Tracker: Infection prevention monitoring."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[TransplantOutcomesRegistryEngineResult] = []
+        super().__init__("Infection Prophylaxis Tracker", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> TransplantOutcomesRegistryEngineResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Transplant Outcomes Registry: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Transplant Outcomes Registry: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = TransplantOutcomesRegistryEngineResult(
-            feature_name="Transplant Outcomes Registry",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 7. DONOR-RECIPIENT MATCHING
-# =============================================================================
-@dataclass
-class DonorrecipientMatchingEngineResult:
-    feature_name: str = "Donor-Recipient Matching"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class DonorrecipientMatchingEngine:
-    """
-    Donor-Recipient Matching: Donor-Recipient Matching
-    """
+class TransplantOutcomesRegistryEngine(BaseEnrichmentEngine):
+    """Transplant Outcomes Registry: Long-term outcome tracking."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[DonorrecipientMatchingEngineResult] = []
+        super().__init__("Transplant Outcomes Registry", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> DonorrecipientMatchingEngineResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Donor-Recipient Matching: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Donor-Recipient Matching: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
-
-        res = DonorrecipientMatchingEngineResult(
-            feature_name="Donor-Recipient Matching",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
-
-# =============================================================================
-# 8. POST-TRANSPLANT COMPLICATION TRACKER
-# =============================================================================
-@dataclass
-class PosttransplantComplicationTrackerResult:
-    feature_name: str = "Post-Transplant Complication Tracker"
-    status: str = "OPTIMAL"
-    score: float = 0.0
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    alerts: List[str] = field(default_factory=list)
-    recommendations: List[str] = field(default_factory=list)
-    timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
-
-class PosttransplantComplicationTracker:
-    """
-    Post-Transplant Complication Tracker: Post-Transplant Complication Tracker
-    """
+class DonorrecipientMatchingEngine(BaseEnrichmentEngine):
+    """Donor-Recipient Matching: Compatibility scoring."""
     def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
-        self.threshold = threshold
-        self.config = config or {}
-        self.history: List[PosttransplantComplicationTrackerResult] = []
+        super().__init__("Donor-Recipient Matching", threshold, config)
 
-    def evaluate(self, primary_value: float, secondary_value: float = 0.0, **kwargs) -> PosttransplantComplicationTrackerResult:
-        alerts = []
-        recs = []
-        status = "OPTIMAL"
-        score = round(float(primary_value), 3)
 
-        if primary_value > self.threshold * 2:
-            status = "CRITICAL_ALERT"
-            alerts.append(f"Post-Transplant Complication Tracker: Primary value {primary_value:.2f} breached critical threshold ({self.threshold * 2:.2f})")
-            recs.append("Initiate immediate protocol review and escalate to attending lead.")
-        elif primary_value > self.threshold:
-            status = "WARNING"
-            alerts.append(f"Post-Transplant Complication Tracker: Value {primary_value:.2f} exceeds baseline threshold ({self.threshold:.2f})")
-            recs.append("Increase monitoring frequency and perform secondary verification.")
-        else:
-            recs.append("Parameters nominal under standard operating bounds.")
+class PosttransplantComplicationTracker(BaseEnrichmentEngine):
+    """Post-Transplant Complication Tracker: Complication surveillance."""
+    def __init__(self, threshold: float = 1.0, config: Optional[Dict[str, Any]] = None):
+        super().__init__("Post-Transplant Complication Tracker", threshold, config)
 
-        res = PosttransplantComplicationTrackerResult(
-            feature_name="Post-Transplant Complication Tracker",
-            status=status,
-            score=score,
-            metrics={"primary": primary_value, "secondary": secondary_value, **kwargs},
-            alerts=alerts,
-            recommendations=recs
-        )
-        self.history.append(res)
-        return res
 
 # =============================================================================
-# COMPOSITE ENRICHMENT SUITE
+# Compatibility Aliases (for backward compatibility with existing imports)
+# =============================================================================
+FeaturesEngineResult = EnrichmentResult
+WaitlistManagementDashboardEngineResult = EnrichmentResult
+ImmunosuppressionOptimizationEngineResult = EnrichmentResult
+GraftFunctionMonitorEngineResult = EnrichmentResult
+InfectionProphylaxisTrackerResult = EnrichmentResult
+TransplantOutcomesRegistryEngineResult = EnrichmentResult
+DonorrecipientMatchingEngineResult = EnrichmentResult
+PosttransplantComplicationTrackerResult = EnrichmentResult
+
+
+# =============================================================================
+# Composite Enrichment Suite
 # =============================================================================
 class KidneytransplantkpiagentEnrichmentSuite:
     """Master coordinator executing all enriched domain features."""
+
     def __init__(self):
         self.featuresengine = FeaturesEngine()
         self.waitlistmanagementda = WaitlistManagementDashboardEngine()
@@ -434,6 +154,7 @@ class KidneytransplantkpiagentEnrichmentSuite:
         results["DonorrecipientMatchingEngine"] = self.donorrecipientmatchi.evaluate(primary_val, secondary_val)
         results["PosttransplantComplicationTracker"] = self.posttransplantcompli.evaluate(primary_val, secondary_val)
         return results
+
 
 # Global instance
 enrichment_suite = KidneytransplantkpiagentEnrichmentSuite()
