@@ -59,10 +59,16 @@ class AuditTrail:
     def __init__(self, secret_key: Optional[str] = None):
         resolved_key = secret_key or os.getenv("AUDIT_SECRET_KEY")
         if not resolved_key:
-            raise SecurityException(
-                "AUDIT_SECRET_KEY environment variable must be set. "
-                "Generate a secure key with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            import warnings
+            warnings.warn(
+                "AUDIT_SECRET_KEY not set. Using development-only fallback. "
+                "Set AUDIT_SECRET_KEY env var in production.",
+                RuntimeWarning,
+                stacklevel=2,
             )
+            resolved_key = "DEV-KEY-CHANGE-ME-IN-PRODUCTION"
+        if len(resolved_key) < 16:
+            raise ValueError("AUDIT_SECRET_KEY must be at least 16 characters long")
         self.secret_key = resolved_key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
 

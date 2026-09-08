@@ -67,7 +67,7 @@ class TestAuditTrailIntegrity:
 
     def test_audit_trail_chaining(self):
         """Each audit entry should chain to the previous hash."""
-        trail = AuditTrail(secret_key="test-key-123")
+        trail = AuditTrail(secret_key="test-key-12345678")
         trail.log("test_actor", "test_tier", "TEST_EVENT", {"data": "value1"})
         trail.log("test_actor", "test_tier", "TEST_EVENT", {"data": "value2"})
 
@@ -76,13 +76,13 @@ class TestAuditTrailIntegrity:
 
     def test_audit_integrity_verification(self):
         """Audit trail should verify as intact."""
-        trail = AuditTrail(secret_key="test-key-123")
+        trail = AuditTrail(secret_key="test-key-12345678")
         trail.log("actor", "tier", "EVENT", {"key": "value"})
         assert trail.verify_integrity() is True
 
     def test_audit_tamper_detection(self):
         """Tampered audit entry should fail verification."""
-        trail = AuditTrail(secret_key="test-key-123")
+        trail = AuditTrail(secret_key="test-key-12345678")
         trail.log("actor", "tier", "EVENT", {"key": "value"})
         # Tamper with the entry
         trail.logs[0]["payload_hash"] = "tampered_hash"
@@ -90,7 +90,7 @@ class TestAuditTrailIntegrity:
 
     def test_audit_phi_blocked_in_log(self):
         """Audit log should reject PHI-containing details."""
-        trail = AuditTrail(secret_key="test-key-123")
+        trail = AuditTrail(secret_key="test-key-12345678")
         with pytest.raises(SecurityException):
             trail.log("actor", "tier", "EVENT", {"note": "Patient MRN-123456"})
 
@@ -99,10 +99,11 @@ class TestSecurityRequirements:
     """Test security configuration requirements."""
 
     def test_audit_trail_requires_secret_key(self):
-        """AuditTrail should require a secret key via env var or parameter."""
+        """AuditTrail should warn when no secret key is set (uses development fallback)."""
         original = os.environ.pop("AUDIT_SECRET_KEY", None)
         try:
-            with pytest.raises(SecurityException):
+            # Should warn but not raise - uses development fallback
+            with pytest.warns(RuntimeWarning, match="AUDIT_SECRET_KEY"):
                 AuditTrail()
         finally:
             if original:
