@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "kidney-transplant-kpi-engine"
 version = "2.0.0"
-description = "KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Engine"
+description = "Synthetic-data generic threshold-rule demonstration and CLI/API"
 readme = "README.md"
 authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
 license = { text = "MIT" }
@@ -14,14 +14,22 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering",
 ]
 requires-python = ">=3.9"
 dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi>=0.100,<1", "uvicorn>=0.23,<1", "pydantic>=2,<3"]
+test = ["pytest>=7,<10", "pydantic>=2,<3"]
 
 [project.scripts]
 kidney-transplant-kpi-engine = "kidney_transplant_kpi_agent.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-engine"
-Repository = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-engine.git"
+Homepage = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-agent"
+Repository = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-agent.git"
+
+[tool.setuptools]
+packages = ["agents", "kidney_transplant_kpi_agent"]
+py-modules = ["cli", "enrichment", "kidney_tx_sentinel", "simulator"]

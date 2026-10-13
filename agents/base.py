@@ -8,6 +8,7 @@ import json
 import time
 import hmac
 import hashlib
+import threading
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from pydantic import BaseModel, Field
@@ -16,7 +17,7 @@ PHI_PATTERNS = [
     re.compile(r"\b(?:MRN|mrn)[:#\s-]*\d{4,10}\b", re.IGNORECASE),
     re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
     re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
-    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
+    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
     re.compile(r"\b(?:DOB|Date of Birth)[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", re.IGNORECASE),
     re.compile(r"\b(?:Patient\s+Name|Patient)[:\s]+[A-Z][a-z]+\s+[A-Z][a-z]+\b", re.IGNORECASE),
     re.compile(r"\b(?:John\s+Doe|Jane\s+Smith|Alice\s+Johnson)\b", re.IGNORECASE),
@@ -59,6 +60,8 @@ class AuditTrail:
     def __init__(self, secret_key: Optional[str] = None):
         resolved_key = secret_key or os.getenv("AUDIT_SECRET_KEY")
         if not resolved_key:
+            if os.getenv("AUDIT_ENV", "development").lower() == "production":
+                raise ValueError("AUDIT_SECRET_KEY is required in production")
             import warnings
             warnings.warn(
                 "AUDIT_SECRET_KEY not set. Using development-only fallback. "
@@ -71,33 +74,36 @@ class AuditTrail:
             raise ValueError("AUDIT_SECRET_KEY must be at least 16 characters long")
         self.secret_key = resolved_key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
+        self._lock = threading.RLock()
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
         payload_str = json.dumps(details, sort_keys=True)
         assert_no_phi(payload_str)
         payload_hash = hashlib.sha256(payload_str.encode("utf-8")).hexdigest()
-        audit_id = f"AUDIT-{int(time.time()*1000)}-{len(self.logs)+1}"
-        ts = datetime.now(timezone.utc).isoformat()
-        prev_hash = self.logs[-1]["current_hash"] if self.logs else "GENESIS_BLOCK_0000000000000000"
-        sign_string = f"{audit_id}|{ts}|{actor}|{actor_tier}|{event_type}|{payload_hash}|{prev_hash}"
-        signature = hmac.new(self.secret_key, sign_string.encode("utf-8"), hashlib.sha256).hexdigest()
-        entry = {
-            "audit_id": audit_id,
-            "timestamp": ts,
-            "actor": actor,
-            "actor_tier": actor_tier,
-            "event_type": event_type,
-            "payload_hash": payload_hash,
-            "prev_hash": prev_hash,
-            "current_hash": signature,
-        }
-        self.logs.append(entry)
+        with self._lock:
+            audit_id = f"AUDIT-{int(time.time()*1000)}-{len(self.logs)+1}"
+            ts = datetime.now(timezone.utc).isoformat()
+            prev_hash = self.logs[-1]["current_hash"] if self.logs else "GENESIS_BLOCK_0000000000000000"
+            sign_string = f"{audit_id}|{ts}|{actor}|{actor_tier}|{event_type}|{payload_hash}|{prev_hash}"
+            signature = hmac.new(self.secret_key, sign_string.encode("utf-8"), hashlib.sha256).hexdigest()
+            entry = {
+                "audit_id": audit_id,
+                "timestamp": ts,
+                "actor": actor,
+                "actor_tier": actor_tier,
+                "event_type": event_type,
+                "payload_hash": payload_hash,
+                "prev_hash": prev_hash,
+                "current_hash": signature,
+            }
+            self.logs.append(entry)
         return entry
 
     def verify_integrity(self) -> bool:
-        for i, entry in enumerate(self.logs):
+        snapshot = self.get_trail()
+        for i, entry in enumerate(snapshot):
             # Verify chain linkage
-            prev = self.logs[i-1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
+            prev = snapshot[i-1]["current_hash"] if i > 0 else "GENESIS_BLOCK_0000000000000000"
             if entry["prev_hash"] != prev:
                 return False
             # Verify signature integrity (detects tampering with payload_hash or other fields)
@@ -108,16 +114,20 @@ class AuditTrail:
         return True
 
     def get_trail(self) -> List[Dict[str, Any]]:
-        return self.logs
+        with self._lock:
+            return [entry.copy() for entry in self.logs]
 
 
 _GLOBAL_AUDIT: Optional[AuditTrail] = None
+_GLOBAL_AUDIT_LOCK = threading.Lock()
 
 
 def _get_audit() -> AuditTrail:
     global _GLOBAL_AUDIT
     if _GLOBAL_AUDIT is None:
-        _GLOBAL_AUDIT = AuditTrail()
+        with _GLOBAL_AUDIT_LOCK:
+            if _GLOBAL_AUDIT is None:
+                _GLOBAL_AUDIT = AuditTrail()
     return _GLOBAL_AUDIT
 
 

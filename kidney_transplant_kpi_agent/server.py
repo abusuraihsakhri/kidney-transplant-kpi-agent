@@ -14,7 +14,7 @@ def create_app():
 
         app = FastAPI(
             title="KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Agent",
-            description="Calculates Kidney Donor Profile Index (KDPI), forecasts DGF risk, and stages Banff 2019 acute T-cell and antibody-mediated rejection.",
+            description="Synthetic-input demonstration of generic thresholds. Does not calculate KDPI, DGF, or Banff classification.",
             version="2.0.0-PRO",
         )
 

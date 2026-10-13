@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Kidney Transplant Kpi Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
+    "title": "Kidney Transplant KPI Agent Demonstration API",
+    "description": "Synthetic-input generic threshold rules only; not KDPI, DGF prediction, Banff classification, or validated clinical decision support.",
     "version": "3.0.0-ENTERPRISE",
     "contact": {
       "name": "Dr. Abu Suraih Sakhri",
@@ -22,10 +22,10 @@
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "JSON counters and service state",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "JSON counter object"
           }
         }
       }
@@ -69,7 +69,7 @@
         },
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "Demonstration dossier with HMAC audit-chain hash"
           }
         }
       }
