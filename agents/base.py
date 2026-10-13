@@ -59,6 +59,8 @@ class AuditTrail:
     def __init__(self, secret_key: Optional[str] = None):
         resolved_key = secret_key or os.getenv("AUDIT_SECRET_KEY")
         if not resolved_key:
+            if os.getenv("AUDIT_ENV", "development").lower() == "production":
+                raise ValueError("AUDIT_SECRET_KEY is required in production")
             import warnings
             warnings.warn(
                 "AUDIT_SECRET_KEY not set. Using development-only fallback. "
@@ -108,7 +110,7 @@ class AuditTrail:
         return True
 
     def get_trail(self) -> List[Dict[str, Any]]:
-        return self.logs
+        return [entry.copy() for entry in self.logs]
 
 
 _GLOBAL_AUDIT: Optional[AuditTrail] = None
