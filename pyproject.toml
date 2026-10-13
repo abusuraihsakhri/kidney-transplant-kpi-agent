@@ -29,3 +29,7 @@ kidney-transplant-kpi-engine = "kidney_transplant_kpi_agent.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-agent"
 Repository = "https://github.com/abusuraihsakhri/kidney-transplant-kpi-agent.git"
+
+[tool.setuptools]
+packages = ["agents", "kidney_transplant_kpi_agent"]
+py-modules = ["cli", "enrichment", "kidney_tx_sentinel", "simulator"]
