@@ -1,186 +1,84 @@
 # Kidney Transplant KPI Agent
 
-> **Domain:** Nephrology & Renal Replacement Protocols
-> **Reference Guidelines & Standards:** `KDIGO & KDOQI Clinical Guidelines`
+A Python CLI/API and static browser demonstration for evaluating **synthetic**, unitless measurements against threshold rules. The repository contains three historical Python entry points with distinct input schemas. The root CLI and agents package provide the main Docker/API workflow.
 
-<div align="center">
+**Clinical limitation:** Despite legacy module names, these rules do **not** calculate Kidney Donor Profile Index (KDPI), estimate delayed graft function, classify Banff rejection, or implement KDIGO/KDOQI decision algorithms. They have not undergone clinical validation. Do not use outputs for medical decisions.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser demonstration
 
-</div>
+Serve the repository root locally:
 
----
+~~~sh
+python -m http.server 8001
+~~~
 
-## What It Does
+Then open http://localhost:8001/. The root index.html redirects to the browser demonstration in web/index.html.
 
-**Kidney Transplant KPI Agent** is an advanced analytical and computational platform implementing KDPI Donor Scoring, Delayed Graft Function & Banff Staging. It provides a multi-agent evaluation system with cryptographic audit trails and PHI protection.
+The browser processes a synthetic task or an uploaded CSV with up to 1,000 rows (2 MB). It displays rule alerts and real session counts, and exports JSON/CSV. Calculations run in JavaScript without Python, Pyodide, a backend API, external libraries, or external font requests. No browser-side cryptographic audit log is generated. Browser results are not stored or sent to a server.
 
----
+GitHub Pages compatibility is implemented using relative static paths. Live publication must be verified separately.
 
-## Key Capabilities & Algorithmic Modules
+## Rule definitions
 
-### Core Algorithmic & Evaluation Engines
+The following demonstration thresholds are **arbitrary** and unitless, not transplant-specific.
 
-- **`Severity`** — dedicated module for severity evaluation and state verification.
-- **`DomainKnowledgeRegistry`**: Enterprise domain rules, guideline matrices, and evidence benchmarks.
-- **`AgentAlert`** — dedicated module for agent alert evaluation and state verification.
-- **`KDPIProfileCalculatorAgent`**: Specialized Sub-Agent 1 for kidney-transplant-kpi-agent
-- **`DGFRiskForecasterAgent`**: Specialized Sub-Agent 2 for kidney-transplant-kpi-agent
-- **`BanffBiopsyClassifierAgent`**: Specialized Sub-Agent 3 for kidney-transplant-kpi-agent
+| Condition | Output |
+| --- | --- |
+| Primary metric greater than 25 | Elevated alert |
+| Secondary metric greater than 12 | Elevated alert |
+| Synthetic critical flag | Critical alert |
+| Status contains DISCORDANT, ANOMALY, MUTANT, VIOLATION, FAIL, or REJECT | Elevated alert |
+| No condition matches | Routine |
 
----
+Legacy status labels are retained for compatibility, but they are not medical risk categories. Other historical Python modules use different thresholds.
 
-## Installation
+## Python CLI and API
 
-```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/kidney-transplant-kpi-agent.git
-cd kidney-transplant-kpi-agent
+Requires Python 3.9 or newer. For the primary CLI and FastAPI service:
 
-# Install dependencies
-pip install fastapi uvicorn pydantic pytest
-
-# Set up environment configuration
-cp .env.example .env
-# Edit .env and set a secure AUDIT_SECRET_KEY
-```
-
----
-
-## CLI Quickstart & Usage
-
-### 1. Single Task Evaluation
-```bash
-python cli.py audit --task-id TASK-001 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
-```
-
-### 2. System Query Chat
-```bash
-python cli.py chat "What is the system status?"
-```
-
-### 3. Batch CSV Processing
-```bash
+~~~sh
+python -m pip install -e ".[api,test]"
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+python cli.py audit --task-id DEMO-001 --target SAMPLE-001 --primary 26 --secondary 13 --status DISCORDANT
 python cli.py batch -i sample.csv -o results.csv
-```
-
-### 4. Verify Audit Trail Integrity
-```bash
 python cli.py verify-audit
-```
-
-### 5. Launch REST API Server
-```bash
 python cli.py serve --host 127.0.0.1 --port 8000
-```
+~~~
 
-### Parameter Reference
-- `--task-id`: Unique task/case identifier
-- `--target`: Entity or target identifier
-- `--primary`: Primary measurement value (float)
-- `--secondary`: Secondary measurement value (float)
-- `--critical`: Flag for critical/emergency status
-- `--status`: Status descriptor (e.g., NOMINAL, DISCORDANT)
-- `-i/--input`: Input CSV file path for batch processing
-- `-o/--output`: Output CSV file path for batch processing
+API endpoints are GET /health, GET /metrics, POST /api/audit, POST /api/chat, and GET /api/audit/logs. Implementation: agents/api.py. The API has **no built-in authentication** and must not be exposed publicly without additional controls.
 
-### Input Data Schema (CSV)
+For production API operation, set AUDIT_ENV=production and a strong secret AUDIT_SECRET_KEY. Audit initialization then fails if the key is absent. Development mode warns and uses a nonsecret fallback key; its signatures are not appropriate for production.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `task_id` | Task identifier | Required |
-| `target_identifier` | Target entity identifier | Required |
-| `primary_metric` | Primary measurement value | Required |
-| `secondary_metric` | Secondary measurement value | Required |
-| `status_descriptor` | Status code descriptor | Required |
-| `is_critical_flag` | Emergency escalation flag | Optional |
+Run tests and Python syntax verification:
 
----
+~~~sh
+pytest -q
+python -m compileall -q agents kidney_transplant_kpi_agent cli.py kidney_tx_sentinel.py enrichment.py
+node --check web/app.js
+node --check web/kpi.js
+node --test tests/web.test.cjs
+~~~
 
-## REST API Endpoints
+Node.js is needed only for JavaScript tests, not browser execution.
 
-| Method | Endpoint | Description |
-|:-------|:---------|:------------|
-| GET | `/health` | Health check |
-| GET | `/metrics` | Prometheus-style metrics |
-| POST | `/api/audit` | Submit task for evaluation |
-| POST | `/api/chat` | Query the supervisory chat |
-| GET | `/api/audit/logs` | Retrieve audit trail |
+## Input schema
 
----
+The primary Python CLI and browser accept task_id, target_identifier, and primary_metric (required). Optional fields are secondary_metric, status_descriptor, and is_critical_flag. CSV boolean values include true/false, yes/no, and 1/0. Use **synthetic identifiers only**.
 
-## Security & Enterprise Architecture
+The kidney_transplant_kpi_agent/ package and kidney_tx_sentinel.py remain for backward compatibility with their own CLI/API interfaces and tests.
 
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+## Privacy and security
 
----
+- The browser retains evaluations only in tab memory; it parses CSV locally and exports only on request. Never enter real patient data.
+- Python audit records are HMAC-SHA256 signed but remain in process memory; they are not durable or externally timestamped.
+- Python's PHI pattern guard is **heuristic**, not validated de-identification and not evidence of HIPAA compliance.
+- The mock model adapter performs no external model inference or clinical verification.
+- Real-world API deployment would require authentication, TLS, access controls and independent clinical/security validation.
 
-## Testing & Verification
+## Technologies and compatibility
 
-Run the automated test suite:
-
-```bash
-AUDIT_SECRET_KEY=test-key pytest -v
-```
-
-Execute high-throughput batch simulation benchmarks:
-
-```bash
-AUDIT_SECRET_KEY=test-key python simulator.py --tasks 1000 --concurrency 8
-```
-
----
-
-## Container Deployment
-
-```bash
-# Build and run with Docker Compose
-docker-compose up --build
-
-# Or manually with Docker
-docker build -t kidney-transplant-kpi-agent .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key kidney-transplant-kpi-agent
-```
-
----
-
-## Project Structure
-
-```
-kidney-transplant-kpi-agent/
-├── agents/                      # Core agent modules
-│   ├── __init__.py
-│   ├── api.py                   # FastAPI REST server
-│   ├── base.py                  # Security, PHI guard, audit trail
-│   ├── learning.py              # Bayesian calibration engine
-│   ├── llm_factory.py           # LLM provider factory
-│   ├── metrics.py               # Prometheus metrics exporter
-│   ├── models.py                # Pydantic data models
-│   ├── streamer.py              # WebSocket telemetry
-│   ├── supervisor.py            # Supervisor orchestrator
-│   └── workers.py               # Domain worker agents
-├── tests/                       # Test suite
-├── kidney_transplant_kpi_agent/ # Alternative package structure
-├── web/                         # Web dashboard
-├── cli.py                       # Command-line interface
-├── enrichment.py                # Enrichment feature engines
-├── simulator.py                 # Load testing simulator
-├── pyproject.toml               # Project configuration
-├── Dockerfile                   # Docker build
-└── docker-compose.yml           # Docker Compose configuration
-```
-
----
+Python 3.9+, Pydantic 2, FastAPI, Uvicorn, pytest; HTML/CSS, vanilla JavaScript and the Node.js built-in test runner. The browser demonstration targets current desktop and mobile browsers with JavaScript enabled. Docker support is provided by Dockerfile and docker-compose.yml.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
