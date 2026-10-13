@@ -42,3 +42,11 @@ def test_production_fails_closed_without_secret(monkeypatch):
     monkeypatch.setenv("AUDIT_ENV", "production")
     with pytest.raises(ValueError, match="required in production"):
         AuditTrail()
+
+def test_concurrent_audit_appends_preserve_chain():
+    from concurrent.futures import ThreadPoolExecutor
+    trail = AuditTrail(secret_key="test-key-12345678")
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(lambda n: trail.log("actor", "tier", "EVENT", {"n": n}), range(100)))
+    assert len(trail.get_trail()) == 100
+    assert trail.verify_integrity()

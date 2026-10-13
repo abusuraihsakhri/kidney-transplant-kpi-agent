@@ -41,6 +41,8 @@ def api_audit(payload: SystemTaskPayload):
         dossier = supervisor.process_task(payload)
     except SecurityException:
         raise HTTPException(status_code=422, detail="Potential identifier detected; use synthetic data only.") from None
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=422, detail="Invalid task attributes.") from None
     return dossier.to_dict()
 
 

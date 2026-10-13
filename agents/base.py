@@ -17,7 +17,7 @@ PHI_PATTERNS = [
     re.compile(r"\b(?:MRN|mrn)[:#\s-]*\d{4,10}\b", re.IGNORECASE),
     re.compile(r"\b\d{3}-\d{2}-\d{4}\b"),
     re.compile(r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
-    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"),
+    re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b"),
     re.compile(r"\b(?:DOB|Date of Birth)[:\s]*\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b", re.IGNORECASE),
     re.compile(r"\b(?:Patient\s+Name|Patient)[:\s]+[A-Z][a-z]+\s+[A-Z][a-z]+\b", re.IGNORECASE),
     re.compile(r"\b(?:John\s+Doe|Jane\s+Smith|Alice\s+Johnson)\b", re.IGNORECASE),
@@ -119,12 +119,15 @@ class AuditTrail:
 
 
 _GLOBAL_AUDIT: Optional[AuditTrail] = None
+_GLOBAL_AUDIT_LOCK = threading.Lock()
 
 
 def _get_audit() -> AuditTrail:
     global _GLOBAL_AUDIT
     if _GLOBAL_AUDIT is None:
-        _GLOBAL_AUDIT = AuditTrail()
+        with _GLOBAL_AUDIT_LOCK:
+            if _GLOBAL_AUDIT is None:
+                _GLOBAL_AUDIT = AuditTrail()
     return _GLOBAL_AUDIT
 
 
