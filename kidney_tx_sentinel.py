@@ -33,8 +33,8 @@ class Severity(str, Enum):
 class DomainKnowledgeRegistry:
     """Enterprise domain rules, guideline matrices, and evidence benchmarks."""
     SYSTEM_VERSION = "2.0.0-PRO-CLINICAL"
-    ZERO_PHI_COMPLIANCE = True
-    HIPAA_SAFE_HARBOR = "ACTIVE_ON_PREMISES"
+    ZERO_PHI_COMPLIANCE = False
+    HIPAA_SAFE_HARBOR = "NOT_VALIDATED"
 
     @staticmethod
     def audit_security_and_integrity(payload: Dict[str, Any]) -> List[str]:
@@ -181,7 +181,7 @@ def create_app():
 
         app = FastAPI(
             title="KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Agent",
-            description="Calculates Kidney Donor Profile Index (KDPI), forecasts DGF risk, and stages Banff 2019 acute T-cell and antibody-mediated rejection.",
+            description="Generic demonstration thresholds; does not calculate KDPI, DGF risk, or Banff staging.",
             version="1.0.0",
         )
 
