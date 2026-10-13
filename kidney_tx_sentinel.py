@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Agent
-Calculates Kidney Donor Profile Index (KDPI), forecasts DGF risk, and stages Banff 2019 acute T-cell and antibody-mediated rejection.
+Generic demonstration thresholds; does not calculate KDPI, DGF risk, or Banff staging.
 
 Domain: Transplant Nephrology
 Author: Dr. Abu Suraih Sakhri
@@ -89,7 +89,7 @@ class DGFRiskForecasterAgent:
     """Specialized Sub-Agent 2 for kidney-transplant-kpi-agent"""
     def evaluate(self, payload: Dict[str, Any]) -> List[AgentAlert]:
         alerts = []
-        is_critical = bool(payload.get("critical_flag", False))
+        is_critical = str(payload.get("critical_flag", payload.get("is_stat", False))).strip().lower() in ("true", "1", "yes")
         val2 = float(payload.get("metric_secondary", 5.0))
         if is_critical or val2 > 12.0:
             alerts.append(
@@ -143,7 +143,7 @@ class KidneyTxCoordinator:
         critical_count = sum(1 for a in all_alerts if a.severity == Severity.CRITICAL)
         warning_count = sum(1 for a in all_alerts if a.severity == Severity.WARNING)
 
-        overall_status = "CRITICAL_ACTION_REQUIRED" if critical_count > 0 else ("WARNING_ACTIVE" if warning_count > 0 else "CONCORDANT_NORMAL")
+        overall_status = "CRITICAL_ACTION_REQUIRED" if critical_count > 0 else ("WARNING_ACTIVE" if all_alerts else "CONCORDANT_NORMAL")
 
         dossier = {
             "system": "kidney-transplant-kpi-agent",
@@ -166,7 +166,7 @@ class KidneyTxCoordinator:
         if "summary" in q or "status" in q:
             return f"KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Agent currently tracking {len(self.case_registry)} cases in local air-gapped memory."
         elif "guidelines" in q or "protocol" in q:
-            return "All sub-agents operate under validated consensus clinical algorithms and CAP/CLSI/NCCN/WHO standards."
+            return "These are unvalidated synthetic demonstration rules, not clinical guidelines or decision support."
         else:
             return f"KidneyTx Sentinel: KDPI Donor Matching, Delayed Graft Function & Banff Rejection Agent executive agent online. Continuous supervisory monitoring active across all domain parameters."
 
