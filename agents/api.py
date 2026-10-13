@@ -1,6 +1,7 @@
 """
 FastAPI REST API Server for Kidney Transplant Kpi Agent.
 """
+import os
 from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -9,6 +10,8 @@ from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
 supervisor = SystemSupervisor(model_provider="mock")
+if os.getenv("AUDIT_ENV", "development").lower() == "production":
+    AuditLogger.verify_integrity()  # Fail during startup rather than on first request if audit key is missing.
 
 app = FastAPI(
     title="Kidney Transplant Kpi Agent API",
